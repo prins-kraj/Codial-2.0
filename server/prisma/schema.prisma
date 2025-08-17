@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  lastSeen     DateTime @default(now()) @map("last_seen")
+  status       UserStatus @default(OFFLINE)
+
+  // Relations
+  messages     Message[]
+  userRooms    UserRoom[]
+  createdRooms Room[]     @relation("RoomCreator")
+
+  @@map("users")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isPrivate   Boolean  @default(false) @map("is_private")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator   User       @relation("RoomCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  messages  Message[]
+  userRooms UserRoom[]
+
+  @@map("rooms")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String   @map("user_id")
+  roomId    String   @map("room_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  editedAt  DateTime? @map("edited_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+  @@index([roomId, createdAt])
+  @@index([userId])
+}
+
+model UserRoom {
+  userId     String   @map("user_id")
+  roomId     String   @map("room_id")
+  joinedAt   DateTime @default(now()) @map("joined_at")
+  lastReadAt DateTime @default(now()) @map("last_read_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roomId])
+  @@map("user_rooms")
+}
+
+enum UserStatus {
+  ONLINE
+  AWAY
+  OFFLINE
+}
