@@ -5,12 +5,12 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
 // Import middleware
-import { 
-  generalLimiter, 
-  securityHeaders, 
-  corsOptions, 
-  sanitizeInput, 
-  requestLogger 
+import {
+  // generalLimiter,
+  securityHeaders,
+  corsOptions,
+  sanitizeInput,
+  requestLogger,
 } from './middleware/security';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -47,7 +47,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Custom middleware
 app.use(requestLogger);
 app.use(sanitizeInput);
-app.use(generalLimiter);
+// app.use(generalLimiter);
 
 // API routes
 app.use('/api', apiRoutes);
@@ -77,6 +77,7 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 Socket.IO server ready`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Server accessible at http://0.0.0.0:${PORT}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

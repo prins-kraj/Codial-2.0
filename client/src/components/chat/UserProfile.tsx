@@ -8,12 +8,16 @@ interface UserProfileProps {
   user: AuthUser;
 }
 
+
 function UserProfile({ user }: UserProfileProps) {
+  console.log("user", user);
+  {console.log(user.status)}
   return (
     <div className="mt-4 p-3 bg-gray-50 rounded-lg">
       <div className="flex items-center space-x-3">
         <div className="relative">
           <UserAvatar user={user} size="md" />
+          
           <UserStatusIndicator status={user.status} size="sm" className="absolute -bottom-1 -right-1" />
         </div>
         

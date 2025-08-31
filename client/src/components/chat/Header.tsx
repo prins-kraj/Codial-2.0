@@ -1,7 +1,7 @@
 import React from 'react';
 import { Hash, Lock, Users, MoreVertical } from 'lucide-react';
 import { Room } from '@/types';
-import { HelperUtils } from '@/utils/helpers';
+// import { HelperUtils } from '@/utils/helpers';
 import Button from '@/components/ui/Button';
 
 interface HeaderProps {
@@ -39,13 +39,13 @@ function Header({ room, onlineCount }: HeaderProps) {
           <div className="hidden sm:flex items-center space-x-4 text-sm text-gray-500">
             <div className="flex items-center space-x-1">
               <Users className="h-4 w-4" />
-              <span>{HelperUtils.formatNumber(room.memberCount)} members</span>
+              {/* <span>{HelperUtils.formatNumber(room.memberCount)} members</span> */}
             </div>
             
             {onlineCount !== undefined && (
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 bg-green-500 rounded-full" />
-                <span>{HelperUtils.formatNumber(onlineCount)} online</span>
+                {/* <span>{HelperUtils.formatNumber(onlineCount)} online</span> */}
               </div>
             )}
           </div>

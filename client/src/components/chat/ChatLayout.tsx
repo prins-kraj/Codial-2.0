@@ -32,10 +32,11 @@ function ChatLayout() {
       </div>
 
       {/* Mobile sidebar */}
+      {isMobileSidebarOpen && 
       <Sidebar
         isMobileOpen={isMobileSidebarOpen}
         onMobileClose={() => setIsMobileSidebarOpen(false)}
-      />
+      />}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col pt-16 lg:pt-0">
