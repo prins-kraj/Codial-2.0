@@ -175,6 +175,56 @@ class SocketManager {
     }
   }
 
+  editMessage(messageId: string, content: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit(SOCKET_EVENTS.EDIT_MESSAGE, { messageId, content });
+    }
+  }
+
+  deleteMessage(messageId: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit(SOCKET_EVENTS.DELETE_MESSAGE, { messageId });
+    }
+  }
+
+  // Direct messaging methods
+  sendDirectMessage(receiverId: string, content: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit(SOCKET_EVENTS.SEND_DIRECT_MESSAGE, { receiverId, content });
+    }
+  }
+
+  editDirectMessage(messageId: string, content: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit(SOCKET_EVENTS.EDIT_DIRECT_MESSAGE, { messageId, content });
+    }
+  }
+
+  deleteDirectMessage(messageId: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit(SOCKET_EVENTS.DELETE_DIRECT_MESSAGE, { messageId });
+    }
+  }
+
+  joinDirectConversation(partnerId: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('join_direct_conversation', partnerId);
+    }
+  }
+
+  leaveDirectConversation(partnerId: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('leave_direct_conversation', partnerId);
+    }
+  }
+
+  // User profile and status methods
+  updateUserStatus(status: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('update_user_status', { status });
+    }
+  }
+
   // Typing indicator methods
   startTyping(roomId: string): void {
     if (this.socket?.connected) {

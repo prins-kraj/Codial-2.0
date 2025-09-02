@@ -1,6 +1,19 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_BASE_URL, STORAGE_KEYS } from '@/config/constants';
-import { ApiResponse } from '@/types';
+import { 
+  ApiResponse, 
+  DirectConversation, 
+  DirectMessage, 
+  SendDirectMessageRequest,
+  EditMessageRequest,
+  UserProfile,
+  UpdateProfileRequest,
+  UserSettings,
+  UpdateSettingsRequest,
+  ChangePasswordRequest,
+  Message,
+  User
+} from '@/types';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -150,6 +163,82 @@ export class ApiClient {
   static isAuthenticated(): boolean {
     const token = this.getAuthToken();
     return !!token;
+  }
+
+  // Direct Messages API methods
+  static async getDirectMessageConversations(): Promise<ApiResponse<DirectConversation[]>> {
+    return this.get<DirectConversation[]>('/api/direct-messages');
+  }
+
+  static async getDirectMessages(userId: string): Promise<ApiResponse<DirectMessage[]>> {
+    return this.get<DirectMessage[]>(`/api/direct-messages/${userId}`);
+  }
+
+  static async sendDirectMessage(data: SendDirectMessageRequest): Promise<ApiResponse<DirectMessage>> {
+    return this.post<DirectMessage>('/api/direct-messages', data);
+  }
+
+  static async editDirectMessage(messageId: string, data: EditMessageRequest): Promise<ApiResponse<DirectMessage>> {
+    return this.put<DirectMessage>(`/api/direct-messages/${messageId}`, data);
+  }
+
+  static async deleteDirectMessage(messageId: string): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/api/direct-messages/${messageId}`);
+  }
+
+  static async searchDirectMessages(query: string): Promise<ApiResponse<DirectMessage[]>> {
+    return this.get<DirectMessage[]>(`/api/direct-messages/search/messages?q=${encodeURIComponent(query)}`);
+  }
+
+  static async markDirectMessagesAsRead(userId: string): Promise<ApiResponse<void>> {
+    return this.put<void>(`/api/direct-messages/${userId}/read`, {});
+  }
+
+  // User Profile API methods
+  static async getUserProfile(userId: string): Promise<ApiResponse<UserProfile>> {
+    return this.get<UserProfile>(`/api/users/${userId}/profile`);
+  }
+
+  static async updateUserProfile(data: UpdateProfileRequest): Promise<ApiResponse<UserProfile>> {
+    return this.put<UserProfile>('/api/users/me/profile', data);
+  }
+
+  static async uploadProfilePicture(file: File): Promise<ApiResponse<{ profilePicture: string }>> {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    
+    return this.post<{ profilePicture: string }>('/api/users/me/profile/picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+
+  // Settings API methods
+  static async getUserSettings(): Promise<ApiResponse<UserSettings>> {
+    return this.get<UserSettings>('/api/users/me/settings');
+  }
+
+  static async updateUserSettings(data: UpdateSettingsRequest): Promise<ApiResponse<UserSettings>> {
+    return this.put<UserSettings>('/api/users/me/settings', data);
+  }
+
+  static async changePassword(data: ChangePasswordRequest): Promise<ApiResponse<void>> {
+    return this.put<void>('/api/users/me/password', data);
+  }
+
+  // Message Management API methods
+  static async editMessage(messageId: string, data: EditMessageRequest): Promise<ApiResponse<Message>> {
+    return this.put<Message>(`/api/messages/${messageId}`, data);
+  }
+
+  static async deleteMessage(messageId: string): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/api/messages/${messageId}`);
+  }
+
+  // User Search API methods
+  static async searchUsers(query: string): Promise<ApiResponse<User[]>> {
+    return this.get<User[]>(`/api/users/search?q=${encodeURIComponent(query)}`);
   }
 }
 

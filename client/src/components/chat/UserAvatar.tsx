@@ -1,10 +1,10 @@
 import React from 'react';
-import { AuthUser, User } from '@/types';
+import { AuthUser, User, UserProfile } from '@/types';
 import { HelperUtils } from '@/utils/helpers';
 import { cn } from '@/utils/cn';
 
 interface UserAvatarProps {
-  user: AuthUser | User;
+  user: AuthUser | User | UserProfile;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -18,6 +18,24 @@ function UserAvatar({ user, size = 'md', className }: UserAvatarProps) {
 
   const initials = HelperUtils.getInitials(user.username);
   const avatarColor = HelperUtils.getAvatarColor(user.username);
+
+  // Check if user has a profile picture
+  const profilePicture = 'profilePicture' in user ? user.profilePicture : undefined;
+
+  if (profilePicture) {
+    return (
+      <img
+        src={profilePicture}
+        alt={user.username}
+        className={cn(
+          'rounded-full object-cover',
+          sizes[size],
+          className
+        )}
+        title={user.username}
+      />
+    );
+  }
 
   return (
     <div

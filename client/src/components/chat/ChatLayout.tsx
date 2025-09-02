@@ -1,10 +1,27 @@
 import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import ChatRoom from './ChatRoom';
+import DirectMessageChat from './DirectMessageChat';
 import WelcomeScreen from './WelcomeScreen';
 import Button from '@/components/ui/Button';
+
+// Wrapper component to handle direct message routing
+function DirectMessageChatWrapper() {
+  const { userId } = useParams<{ userId: string }>();
+  console.log(userId);
+  
+  console.log('DirectMessageChatWrapper: userId from params:', userId);
+  
+  if (!userId) {
+    console.log('DirectMessageChatWrapper: No userId, showing WelcomeScreen');
+    return <WelcomeScreen />;
+  }
+  
+  console.log('DirectMessageChatWrapper: Rendering DirectMessageChat for:', userId);
+  return <DirectMessageChat participantId={userId} />;
+}
 
 function ChatLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -43,6 +60,7 @@ function ChatLayout() {
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
           <Route path="/room/:roomId" element={<ChatRoom />} />
+          <Route path="/dm/:userId" element={<DirectMessageChatWrapper />} />
         </Routes>
       </div>
     </div>

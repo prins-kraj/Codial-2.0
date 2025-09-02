@@ -97,16 +97,33 @@ export const SOCKET_EVENTS = {
   MESSAGE_RECEIVED: 'message_received',
   MESSAGE_UPDATED: 'message_updated',
   MESSAGE_DELETED: 'message_deleted',
+  EDIT_MESSAGE: 'edit_message',
+  DELETE_MESSAGE: 'delete_message',
+  MESSAGE_EDITED: 'message_edited',
+  
+  // Direct Messages
+  SEND_DIRECT_MESSAGE: 'send_direct_message',
+  DIRECT_MESSAGE_SENT: 'direct_message_sent',
+  DIRECT_MESSAGE_RECEIVED: 'direct_message_received',
+  EDIT_DIRECT_MESSAGE: 'edit_direct_message',
+  DELETE_DIRECT_MESSAGE: 'delete_direct_message',
+  DIRECT_MESSAGE_EDITED: 'direct_message_edited',
+  DIRECT_MESSAGE_DELETED: 'direct_message_deleted',
+  JOIN_DIRECT_CONVERSATION: 'join_direct_conversation',
+  LEAVE_DIRECT_CONVERSATION: 'leave_direct_conversation',
   
   // Typing indicators
   TYPING_START: 'typing_start',
   TYPING_STOP: 'typing_stop',
   TYPING_INDICATOR: 'typing_indicator',
   
-  // User presence
+  // User presence and profile
   USER_JOINED: 'user_joined',
   USER_LEFT: 'user_left',
   USER_STATUS_CHANGED: 'user_status_changed',
+  USER_PROFILE_UPDATED: 'user_profile_updated',
+  USER_SETTINGS_CHANGED: 'user_settings_changed',
+  UPDATE_USER_STATUS: 'update_user_status',
   
   // Room events
   ROOM_CREATED: 'room_created',

@@ -209,6 +209,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPDATE_MESSAGE', payload: message });
     };
 
+    const handleMessageEdited = (message: Message) => {
+      dispatch({ type: 'UPDATE_MESSAGE', payload: message });
+    };
+
     const handleMessageDeleted = (data: { messageId: string; roomId: string }) => {
       dispatch({ type: 'DELETE_MESSAGE', payload: data });
     };
@@ -269,6 +273,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     socket.on(SOCKET_EVENTS.CONNECT_ERROR, handleConnectError);
     socket.on(SOCKET_EVENTS.MESSAGE_RECEIVED, handleMessageReceived);
     socket.on(SOCKET_EVENTS.MESSAGE_UPDATED, handleMessageUpdated);
+    socket.on(SOCKET_EVENTS.MESSAGE_EDITED, handleMessageEdited);
     socket.on(SOCKET_EVENTS.MESSAGE_DELETED, handleMessageDeleted);
     socket.on(SOCKET_EVENTS.TYPING_INDICATOR, handleTypingIndicator);
     socket.on(SOCKET_EVENTS.USER_JOINED, handleUserJoined);
@@ -284,6 +289,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       socket.off(SOCKET_EVENTS.CONNECT_ERROR, handleConnectError);
       socket.off(SOCKET_EVENTS.MESSAGE_RECEIVED, handleMessageReceived);
       socket.off(SOCKET_EVENTS.MESSAGE_UPDATED, handleMessageUpdated);
+      socket.off(SOCKET_EVENTS.MESSAGE_EDITED, handleMessageEdited);
       socket.off(SOCKET_EVENTS.MESSAGE_DELETED, handleMessageDeleted);
       socket.off(SOCKET_EVENTS.TYPING_INDICATOR, handleTypingIndicator);
       socket.off(SOCKET_EVENTS.USER_JOINED, handleUserJoined);

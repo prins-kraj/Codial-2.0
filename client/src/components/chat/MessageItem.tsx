@@ -1,49 +1,102 @@
 import React, { useState } from 'react';
-import { MoreHorizontal, Edit, Trash2, Copy } from 'lucide-react';
 import { AuthUser, Message } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { HelperUtils } from '@/utils/helpers';
 import UserAvatar from './UserAvatar';
-import Button from '@/components/ui/Button';
-import { useClickOutside } from '@/hooks/useClickOutside';
+import UserProfileComponent from './UserProfileComponent';
+import MessageActions from './MessageActions';
+import EditMessageInput from './EditMessageInput';
+import { ApiClient } from '@/utils/api';
+import { socketManager } from '@/utils/socket';
+import { SOCKET_EVENTS } from '@/config/constants';
 import toast from 'react-hot-toast';
 
 interface MessageItemProps {
   message: Message;
   isGroupStart: boolean;
   isGroupEnd: boolean;
+  onMessageUpdate?: (updatedMessage: Message) => void;
+  onMessageDelete?: (messageId: string) => void;
 }
 
-function MessageItem({ message, isGroupStart, isGroupEnd }: MessageItemProps) {
-  const [showMenu, setShowMenu] = useState(false);
+function MessageItem({ 
+  message, 
+  isGroupStart, 
+  onMessageUpdate,
+  onMessageDelete 
+}: MessageItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuth();
-  const menuRef = useClickOutside<HTMLDivElement>(() => setShowMenu(false));
-
-  const isOwnMessage = user?.id === message.userId;
-  const canEdit = isOwnMessage && !message.editedAt;
-  const canDelete = isOwnMessage;
-
-  const handleCopyMessage = async () => {
-    const success = await HelperUtils.copyToClipboard(message.content);
-    if (success) {
-      toast.success('Message copied to clipboard');
-    } else {
-      toast.error('Failed to copy message');
-    }
-    setShowMenu(false);
-  };
 
   const handleEditMessage = () => {
-    // TODO: Implement edit functionality
-    toast('Edit functionality coming soon!');
-    setShowMenu(false);
+    setIsEditing(true);
   };
 
-  const handleDeleteMessage = () => {
-    // TODO: Implement delete functionality
-    toast('Delete functionality coming soon!');
-    setShowMenu(false);
+  const handleSaveEdit = async (content: string) => {
+    try {
+      // Update via API
+      const response = await ApiClient.editMessage(message.id, { content });
+      
+      if (response.success && response.data) {
+        // Emit socket event for real-time updates
+        socketManager.getSocket()?.emit(SOCKET_EVENTS.EDIT_MESSAGE, {
+          messageId: message.id,
+          content
+        });
+        
+        // Update local state
+        if (onMessageUpdate) {
+          onMessageUpdate(response.data);
+        }
+        
+        toast.success('Message updated');
+        setIsEditing(false);
+      } else {
+        toast.error(response.error || 'Failed to update message');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update message');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      const response = await ApiClient.deleteMessage(message.id);
+      
+      if (response.success) {
+        // Emit socket event for real-time updates
+        socketManager.getSocket()?.emit(SOCKET_EVENTS.DELETE_MESSAGE, { messageId: message.id });
+        
+        // Update local state
+        if (onMessageDelete) {
+          onMessageDelete(message.id);
+        }
+        
+        toast.success('Message deleted');
+      } else {
+        toast.error(response.error || 'Failed to delete message');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete message');
+    }
+  };
+
+  const handleUsernameClick = () => {
+    setShowProfile(true);
+  };
+
+  const handleAvatarClick = () => {
+    setShowProfile(true);
   };
 
   return (
@@ -56,7 +109,12 @@ function MessageItem({ message, isGroupStart, isGroupEnd }: MessageItemProps) {
         {/* Avatar (only show for group start) */}
         <div className="w-10 flex-shrink-0">
           {isGroupStart ? (
-            <UserAvatar user={message.user as AuthUser} size="md" />
+            <button
+              onClick={handleAvatarClick}
+              className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full"
+            >
+              <UserAvatar user={message.user as AuthUser} size="md" />
+            </button>
           ) : (
             <div className="w-10" />
           )}
@@ -67,9 +125,12 @@ function MessageItem({ message, isGroupStart, isGroupEnd }: MessageItemProps) {
           {/* Username and timestamp (only show for group start) */}
           {isGroupStart && (
             <div className="flex items-baseline space-x-2 mb-1">
-              <span className="text-sm font-semibold text-gray-900">
+              <button
+                onClick={handleUsernameClick}
+                className="text-sm font-semibold text-gray-900 hover:text-primary-600 focus:outline-none focus:underline transition-colors"
+              >
                 {message.user.username}
-              </span>
+              </button>
               <span className="text-xs text-gray-500">
                 {HelperUtils.formatMessageTime(message.createdAt)}
               </span>
@@ -79,14 +140,29 @@ function MessageItem({ message, isGroupStart, isGroupEnd }: MessageItemProps) {
             </div>
           )}
 
-          {/* Message text */}
-          <div
-            className={`
-              text-sm text-gray-900 break-words
-              ${!isGroupStart ? 'hover:bg-gray-50 -ml-3 pl-3 py-1 rounded' : ''}
-            `}
-          >
-            {message.content}
+          {/* Message content */}
+          <div className="min-w-0">
+            {isEditing ? (
+              <EditMessageInput
+                message={message}
+                onSave={handleSaveEdit}
+                onCancel={handleCancelEdit}
+                className="mt-1"
+              />
+            ) : message.isDeleted ? (
+              <div className="text-sm text-gray-400 italic">
+                This message was deleted
+              </div>
+            ) : (
+              <div
+                className={`
+                  text-sm text-gray-900 break-words
+                  ${!isGroupStart ? 'hover:bg-gray-50 -ml-3 pl-3 py-1 rounded' : ''}
+                `}
+              >
+                {message.content}
+              </div>
+            )}
           </div>
 
           {/* Timestamp for grouped messages (show on hover) */}
@@ -101,54 +177,22 @@ function MessageItem({ message, isGroupStart, isGroupEnd }: MessageItemProps) {
         </div>
 
         {/* Message actions */}
-        {isHovered && (
-          <div className="flex items-center space-x-1">
-            <div className="relative" ref={menuRef}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMenu(!showMenu)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-
-              {/* Dropdown menu */}
-              {showMenu && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
-                  <button
-                    onClick={handleCopyMessage}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy message
-                  </button>
-
-                  {canEdit && (
-                    <button
-                      onClick={handleEditMessage}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit message
-                    </button>
-                  )}
-
-                  {canDelete && (
-                    <button
-                      onClick={handleDeleteMessage}
-                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete message
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+        {isHovered && !isEditing && (
+          <MessageActions
+            message={message}
+            onEdit={handleEditMessage}
+            onDelete={handleDeleteMessage}
+            className="flex items-center space-x-1"
+          />
         )}
       </div>
+
+      {/* User Profile Modal */}
+      <UserProfileComponent
+        userId={message.userId}
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+      />
     </div>
   );
 }

@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
-import { MessageCircle, Plus, Settings, LogOut, Menu, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MessageCircle, Plus, Settings, LogOut, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useDirectMessages } from '@/contexts/DirectMessagesContext';
+import { socketManager } from '@/utils/socket';
+import { SOCKET_EVENTS } from '@/config/constants';
+import { UserProfile as UserProfileType } from '@/types';
 import Button from '@/components/ui/Button';
 import UserProfile from './UserProfile';
+import UserProfileComponent from './UserProfileComponent';
 import RoomList from './RoomList';
 import OnlineUsers from './OnlineUsers';
+import DirectMessagesList from './DirectMessagesList';
 import CreateRoomModal from './CreateRoomModal';
+import SettingsModal from './SettingsModal';
+// import UserProfile from './UserProfile';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -15,9 +24,56 @@ interface SidebarProps {
 
 function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users'>('rooms');
+  const [showProfile, setShowProfile] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    'rooms' | 'direct-messages' | 'users'
+  >('rooms');
   const { user, logout } = useAuth();
   const { rooms, onlineUsers } = useChat();
+  const { conversations, getTotalUnreadCount } = useDirectMessages();
+  const { isOpen: isSettingsOpen, openSettings, closeSettings } = useSettings();
+
+  // Socket event listeners for real-time updates
+  useEffect(() => {
+    const socket = socketManager.getSocket();
+    if (!socket) return;
+
+    const handleUserStatusChanged = (data: {
+      userId: string;
+      status: string;
+    }) => {
+      // The contexts will handle updating user status in their respective states
+      // This component just needs to listen to trigger re-renders
+    };
+
+    const handleUserProfileUpdated = (profile: UserProfileType) => {
+      // The contexts will handle updating user profile in their respective states
+      // This component just needs to listen to trigger re-renders
+    };
+
+    const handleDirectMessageReceived = () => {
+      // The DirectMessages context will handle updating unread counts
+      // This component just needs to listen to trigger re-renders
+    };
+
+    // Register event listeners
+    socket.on(SOCKET_EVENTS.USER_STATUS_CHANGED, handleUserStatusChanged);
+    socket.on(SOCKET_EVENTS.USER_PROFILE_UPDATED, handleUserProfileUpdated);
+    socket.on(
+      SOCKET_EVENTS.DIRECT_MESSAGE_RECEIVED,
+      handleDirectMessageReceived
+    );
+
+    // Cleanup event listeners
+    return () => {
+      socket.off(SOCKET_EVENTS.USER_STATUS_CHANGED, handleUserStatusChanged);
+      socket.off(SOCKET_EVENTS.USER_PROFILE_UPDATED, handleUserProfileUpdated);
+      socket.off(
+        SOCKET_EVENTS.DIRECT_MESSAGE_RECEIVED,
+        handleDirectMessageReceived
+      );
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -48,7 +104,7 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
                 <MessageCircle className="h-8 w-8 text-primary-600" />
                 <h1 className="text-xl font-bold text-gray-900">Chat</h1>
               </div>
-              
+
               {/* Mobile close button */}
               <button
                 onClick={onMobileClose}
@@ -59,7 +115,17 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
             </div>
 
             {/* User profile */}
-            {user && <UserProfile user={user} />}
+            {user && (
+              <button
+                onClick={() => {
+                  console.log('Sidebar: Profile button clicked');
+                  setShowProfile(true);
+                }}
+                className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg"
+              >
+                <UserProfile user={user} />
+              </button>
+            )}
           </div>
 
           {/* Tab navigation */}
@@ -68,22 +134,42 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
               <button
                 onClick={() => setActiveTab('rooms')}
                 className={`
-                  flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors
-                  ${activeTab === 'rooms'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  flex-1 py-3 px-2 text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'rooms'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >
                 Rooms ({rooms.length})
               </button>
               <button
+                onClick={() => setActiveTab('direct-messages')}
+                className={`
+                  flex-1 py-3 px-2 text-sm font-medium border-b-2 transition-colors relative
+                  ${
+                    activeTab === 'direct-messages'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                DMs ({conversations.length})
+                {getTotalUnreadCount() > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {getTotalUnreadCount() > 99 ? '99+' : getTotalUnreadCount()}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => setActiveTab('users')}
                 className={`
-                  flex-1 py-3 px-4 text-sm font-medium border-b-2 transition-colors
-                  ${activeTab === 'users'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  flex-1 py-3 px-2 text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'users'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >
@@ -94,7 +180,7 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
 
           {/* Content */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'rooms' ? (
+            {activeTab === 'rooms' && (
               <div className="h-full flex flex-col">
                 {/* Create room button */}
                 <div className="p-4 border-b border-gray-200">
@@ -113,7 +199,15 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
                   <RoomList onMobileClose={onMobileClose} />
                 </div>
               </div>
-            ) : (
+            )}
+
+            {activeTab === 'direct-messages' && (
+              <div className="h-full">
+                <DirectMessagesList onMobileClose={onMobileClose} />
+              </div>
+            )}
+
+            {activeTab === 'users' && (
               <div className="h-full overflow-y-auto">
                 <OnlineUsers />
               </div>
@@ -127,7 +221,15 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
                 variant="ghost"
                 size="sm"
                 className="flex-1"
-                onClick={() => {/* Settings modal */}}
+                onClick={() => {
+                  console.log('Sidebar: Settings button clicked');
+                  console.log(
+                    'Sidebar: isSettingsOpen before:',
+                    isSettingsOpen
+                  );
+                  openSettings();
+                  console.log('Sidebar: openSettings called');
+                }}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
@@ -153,6 +255,18 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
           onClose={() => setShowCreateRoom(false)}
         />
       )}
+
+      {/* User Profile Modal */}
+      {user && (
+        <UserProfileComponent
+          userId={user.id}
+          isOpen={showProfile}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
     </>
   );
 }
