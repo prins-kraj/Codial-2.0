@@ -47,19 +47,6 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Debug logging
-  console.log('DirectMessageChat: messages object:', messages);
-  console.log(
-    'DirectMessageChat: messages[participantId]:',
-    messages[participantId]
-  );
-  console.log('DirectMessageChat: participantId:', participantId);
-  console.log('DirectMessageChat: typeof messages:', typeof messages);
-  console.log(
-    'DirectMessageChat: messages is object:',
-    typeof messages === 'object' && messages !== null
-  );
-
   // Ensure messages is an object and get conversation messages safely
   const safeMessages =
     typeof messages === 'object' && messages !== null ? messages : {};
@@ -78,17 +65,6 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
     conversationMessages = Array.isArray(messagesData) ? messagesData : [];
   }
 
-  console.log('DirectMessageChat: safeMessages:', safeMessages);
-  console.log(
-    'DirectMessageChat: rawConversationMessages:',
-    rawConversationMessages
-  );
-  console.log('DirectMessageChat: conversationMessages:', conversationMessages);
-  console.log(
-    'DirectMessageChat: conversationMessages.length:',
-    conversationMessages.length
-  );
-
   // Try to get participant from existing conversations first
   const existingParticipant = conversations.find(
     c => c.participantId === participantId
@@ -98,16 +74,8 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
   useEffect(() => {
     if (participantId) {
       if (existingParticipant) {
-        console.log(
-          'DirectMessageChat: Using existing participant:',
-          existingParticipant
-        );
         setParticipant(existingParticipant);
       } else {
-        console.log(
-          'DirectMessageChat: Loading participant data for:',
-          participantId
-        );
         setLoadingParticipant(true);
 
         // Load participant profile from API
@@ -115,10 +83,6 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
           ApiClient.getUserProfile(participantId)
             .then(response => {
               if (response.success && response.data) {
-                console.log(
-                  'DirectMessageChat: Participant loaded:',
-                  response.data
-                );
                 setParticipant(response.data);
               } else {
                 console.error(
@@ -145,19 +109,11 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
   useEffect(() => {
     if (participantId) {
       try {
-        console.log(
-          'DirectMessageChat: Setting active conversation for:',
-          participantId
-        );
+        
         setActiveConversation(participantId);
 
-        console.log('DirectMessageChat: Loading messages for:', participantId);
         loadMessages(participantId);
 
-        console.log(
-          'DirectMessageChat: Joining direct conversation for:',
-          participantId
-        );
         // Join direct conversation for real-time updates
         socketManager.joinDirectConversation(participantId);
       } catch (error) {
@@ -169,10 +125,6 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
     return () => {
       if (participantId) {
         try {
-          console.log(
-            'DirectMessageChat: Leaving direct conversation for:',
-            participantId
-          );
           socketManager.leaveDirectConversation(participantId);
         } catch (error) {
           console.error('DirectMessageChat: Error in cleanup:', error);
@@ -390,14 +342,12 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
     }
 
     try {
-      console.log('DirectMessageChat: Sending message to:', participantId);
       await sendMessage(participantId, trimmedMessage);
       setMessage('');
       handleTypingStop();
 
       // Focus back to input
       textareaRef.current?.focus();
-      console.log('DirectMessageChat: Message sent successfully');
     } catch (error) {
       console.error('DirectMessageChat: Failed to send direct message:', error);
       toast.error('Failed to send message. Please try again.');
@@ -457,16 +407,11 @@ function DirectMessageChat({ participantId, onBack }: DirectMessageChatProps) {
     groupedMessages = {};
   }
 
-  console.log('DirectMessageChat: groupedMessages:', groupedMessages);
-
   const remainingChars = UI_CONSTANTS.MAX_MESSAGE_LENGTH - message.length;
   const isNearLimit = remainingChars < 100;
 
   // Early return if messages object is not properly initialized
   if (!messages || typeof messages !== 'object') {
-    console.log(
-      'DirectMessageChat: Messages not properly initialized, showing loading...'
-    );
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">

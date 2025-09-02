@@ -33,10 +33,6 @@ function DirectMessagesList({ onMobileClose }: DirectMessagesListProps) {
   const menuRef = useClickOutside<HTMLDivElement>(() => setShowMenuFor(null));
 
   const handleConversationSelect = (participantId: string) => {
-    console.log(
-      'DirectMessagesList: Starting chat with participant:',
-      participantId
-    );
     setActiveConversation(participantId);
     navigate(`/chat/dm/${participantId}`);
     onMobileClose?.();

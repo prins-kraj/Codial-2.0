@@ -27,8 +27,6 @@ function StartChatButton({
   const navigate = useNavigate();
 
   const handleStartChat = () => {
-    console.log('StartChatButton: Starting chat with user:', user);
-    
     try {
       if (!currentUser) {
         toast.error('You must be logged in to start a chat');
@@ -40,19 +38,15 @@ function StartChatButton({
         return;
       }
 
-      console.log('StartChatButton: Setting active conversation...');
       // Set active conversation
       setActiveConversation(user.id);
       
-      console.log('StartChatButton: Navigating to chat...');
       // Navigate to the direct message chat
       navigate(`/chat/dm/${user.id}`);
       
-      console.log('StartChatButton: Calling callback...');
       // Call callback if provided
       onChatStarted?.();
       
-      console.log('StartChatButton: Showing success toast...');
       toast.success(`Started conversation with ${user.username}`);
     } catch (error) {
       console.error('StartChatButton: Error in handleStartChat:', error);

@@ -22,11 +22,10 @@ interface PasswordFormData {
 }
 
 function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  console.log('SettingsModal rendered:', { isOpen });
 
-  useEffect(() => {
-    console.log('SettingsModal: isOpen changed to:', isOpen);
-  }, [isOpen]);
+  // useEffect(() => {
+  //   console.log('SettingsModal: isOpen changed to:', isOpen);
+  // }, [isOpen]);
   const {
     settings,
     activeTab,
@@ -37,9 +36,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setActiveTab,
     clearError,
   } = useSettings();
-
-  console.log('SettingsModal: settings value:', settings);
-  console.log('SettingsModal: isLoading:', isLoading);
 
   const { user } = useAuth();
 

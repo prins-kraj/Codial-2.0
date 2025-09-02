@@ -10,8 +10,6 @@ interface UserProfileProps {
 
 
 function UserProfile({ user }: UserProfileProps) {
-  console.log("user", user);
-  {console.log(user.status)}
   return (
     <div className="mt-4 p-3 bg-gray-50 rounded-lg">
       <div className="flex items-center space-x-3">

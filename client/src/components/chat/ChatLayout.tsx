@@ -10,16 +10,11 @@ import Button from '@/components/ui/Button';
 // Wrapper component to handle direct message routing
 function DirectMessageChatWrapper() {
   const { userId } = useParams<{ userId: string }>();
-  console.log(userId);
-  
-  console.log('DirectMessageChatWrapper: userId from params:', userId);
-  
+ 
   if (!userId) {
-    console.log('DirectMessageChatWrapper: No userId, showing WelcomeScreen');
     return <WelcomeScreen />;
   }
   
-  console.log('DirectMessageChatWrapper: Rendering DirectMessageChat for:', userId);
   return <DirectMessageChat participantId={userId} />;
 }
 

@@ -187,7 +187,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Open settings modal
   const openSettings = (tab: string = 'account') => {
-    console.log('SettingsContext: Opening settings modal, tab:', tab);
     dispatch({ type: 'SET_OPEN', payload: true });
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
   };

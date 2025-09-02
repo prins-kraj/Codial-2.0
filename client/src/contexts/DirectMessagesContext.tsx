@@ -183,9 +183,6 @@ export function DirectMessagesProvider({
   const [state, dispatch] = useReducer(directMessagesReducer, initialState);
   const { user, isAuthenticated } = useAuth();
 
-  console.log('DirectMessagesProvider: state:', state);
-  console.log('DirectMessagesProvider: state.messages:', state.messages);
-
   // Initialize direct messages when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -200,10 +197,6 @@ export function DirectMessagesProvider({
 
     // Direct message events
     const handleDirectMessageReceived = (message: DirectMessage) => {
-      console.log(
-        'DirectMessagesContext: Received DIRECT_MESSAGE_RECEIVED event:',
-        message
-      );
       dispatch({
         type: 'ADD_MESSAGE',
         payload: {
@@ -234,10 +227,6 @@ export function DirectMessagesProvider({
     };
 
     const handleDirectMessageSent = (message: DirectMessage) => {
-      console.log(
-        'DirectMessagesContext: Received DIRECT_MESSAGE_SENT event:',
-        message
-      );
       dispatch({
         type: 'ADD_MESSAGE',
         payload: {
@@ -326,10 +315,6 @@ export function DirectMessagesProvider({
 
   // Set active conversation
   const setActiveConversation = (userId: string | null) => {
-    console.log(
-      'DirectMessagesContext: Setting active conversation to:',
-      userId
-    );
     dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: userId });
 
     // Clear unread count for this conversation
@@ -340,18 +325,10 @@ export function DirectMessagesProvider({
 
   // Load messages for a specific conversation
   const loadMessages = async (userId: string) => {
-    console.log('DirectMessagesContext: Loading messages for userId:', userId);
     try {
       const response = await ApiClient.getDirectMessages(userId);
-      console.log('DirectMessagesContext: API response:', response);
 
       if (response.success && response.data) {
-        console.log(
-          'DirectMessagesContext: Setting messages for userId:',
-          userId,
-          'messages:',
-          response.data
-        );
 
         // Extract messages array from response data
         // The API returns DirectMessage[] directly, but handle both formats for robustness
@@ -361,16 +338,10 @@ export function DirectMessagesProvider({
           ? (response.data as any).messages
           : [];
 
-        console.log(
-          'DirectMessagesContext: Extracted messages array:',
-          messagesArray
-        );
-
         dispatch({
           type: 'SET_MESSAGES',
           payload: { conversationId: userId, messages: messagesArray },
         });
-        console.log('DirectMessagesContext: Messages loaded successfully');
       } else {
         console.error(
           'DirectMessagesContext: Failed to load messages:',
@@ -392,41 +363,20 @@ export function DirectMessagesProvider({
 
   // Send direct message
   const sendMessage = async (receiverId: string, content: string) => {
-    console.log(
-      'DirectMessagesContext: Sending message to:',
-      receiverId,
-      'content:',
-      content
-    );
     try {
       // Send via socket for real-time delivery
       const socket = socketManager.getSocket();
       const isConnected = socketManager.isConnected();
-      console.log('DirectMessagesContext: Socket available:', !!socket);
-      console.log('DirectMessagesContext: Socket connected:', isConnected);
-
       if (socket && isConnected) {
-        console.log(
-          'DirectMessagesContext: Emitting socket event SEND_DIRECT_MESSAGE'
-        );
         socket.emit(SOCKET_EVENTS.SEND_DIRECT_MESSAGE, { receiverId, content });
-        console.log('DirectMessagesContext: Socket event emitted successfully');
       } else {
-        console.log(
-          'DirectMessagesContext: Socket not available or not connected, using API fallback'
-        );
         // Fallback to API if socket not available
         const response = await ApiClient.sendDirectMessage({
           receiverId,
           content,
         });
-        console.log('DirectMessagesContext: API response:', response);
 
         if (response.success && response.data) {
-          console.log(
-            'DirectMessagesContext: Adding message via API:',
-            response.data
-          );
           dispatch({
             type: 'ADD_MESSAGE',
             payload: {

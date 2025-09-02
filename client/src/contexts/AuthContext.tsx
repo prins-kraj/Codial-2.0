@@ -119,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (response.success && response.data) {
-        console.log('prince', response.data);
         const authData = response.data as { user: AuthUser; token: string };
         const { user, token } = authData;
 

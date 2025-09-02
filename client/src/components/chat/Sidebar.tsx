@@ -118,7 +118,6 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
             {user && (
               <button
                 onClick={() => {
-                  console.log('Sidebar: Profile button clicked');
                   setShowProfile(true);
                 }}
                 className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg"
@@ -222,13 +221,7 @@ function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
                 size="sm"
                 className="flex-1"
                 onClick={() => {
-                  console.log('Sidebar: Settings button clicked');
-                  console.log(
-                    'Sidebar: isSettingsOpen before:',
-                    isSettingsOpen
-                  );
                   openSettings();
-                  console.log('Sidebar: openSettings called');
                 }}
               >
                 <Settings className="h-4 w-4 mr-2" />
