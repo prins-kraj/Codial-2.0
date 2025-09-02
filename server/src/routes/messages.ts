@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { MessageController } from '../controllers/messageController';
 import { authenticateToken } from '../middleware/auth';
-// import { messageLimiter } from '../middleware/security';
+import { generalLimiter } from '../middleware/security';
 
 const router = Router();
 
@@ -12,7 +12,16 @@ router.use(authenticateToken);
 // router.post('/', messageLimiter, MessageController.sendMessageValidation, MessageController.sendMessage);
 router.get('/search', MessageController.searchMessages);
 router.get('/:messageId', MessageController.getMessage);
-router.put('/:messageId', MessageController.editMessage);
-router.delete('/:messageId', MessageController.deleteMessage);
+router.put(
+  '/:messageId',
+  generalLimiter,
+  MessageController.editMessageValidation,
+  MessageController.editMessage
+);
+router.delete(
+  '/:messageId',
+  generalLimiter,
+  MessageController.deleteMessage
+);
 
 export default router;

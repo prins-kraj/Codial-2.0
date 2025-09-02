@@ -3,6 +3,7 @@ import authRoutes from './auth';
 import userRoutes from './users';
 import roomRoutes from './rooms';
 import messageRoutes from './messages';
+import directMessageRoutes from './directMessages';
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.get('/', (req, res) => {
       users: '/api/users',
       rooms: '/api/rooms',
       messages: '/api/messages',
+      directMessages: '/api/direct-messages',
     },
   });
 });
@@ -36,5 +38,6 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/messages', messageRoutes);
+router.use('/direct-messages', directMessageRoutes);
 
 export default router;

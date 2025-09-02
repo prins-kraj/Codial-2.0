@@ -1,14 +1,27 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { socketAuthMiddleware } from './auth';
 import { SocketHandlers } from './handlers';
-import { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData } from '../types';
+import { DirectMessageHandlers } from './directMessageHandlers';
+import {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData,
+} from '../types';
 
-export function initializeSocket(io: SocketIOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) {
+export function initializeSocket(
+  io: SocketIOServer<
+    ClientToServerEvents,
+    ServerToClientEvents,
+    InterServerEvents,
+    SocketData
+  >
+) {
   // Apply authentication middleware
   io.use(socketAuthMiddleware);
 
   // Handle connections
-  io.on('connection', (socket) => {
+  io.on('connection', socket => {
     const socketData = socket.data as SocketData;
     console.log(`✅ User ${socketData.username} connected (${socket.id})`);
 
@@ -22,8 +35,42 @@ export function initializeSocket(io: SocketIOServer<ClientToServerEvents, Server
     });
 
     // Messaging events
-    socket.on('send_message', (data) => {
+    socket.on('send_message', data => {
       SocketHandlers.handleSendMessage(socket, data);
+    });
+
+    socket.on('edit_message', data => {
+      SocketHandlers.handleEditMessage(socket, data);
+    });
+
+    socket.on('delete_message', data => {
+      SocketHandlers.handleDeleteMessage(socket, data);
+    });
+
+    // Direct messaging events
+    socket.on('send_direct_message', data => {
+      DirectMessageHandlers.handleSendDirectMessage(socket, data);
+    });
+
+    socket.on('edit_direct_message', data => {
+      DirectMessageHandlers.handleEditDirectMessage(socket, data);
+    });
+
+    socket.on('delete_direct_message', data => {
+      DirectMessageHandlers.handleDeleteDirectMessage(socket, data);
+    });
+
+    socket.on('join_direct_conversation', (partnerId: string) => {
+      DirectMessageHandlers.handleJoinDirectConversation(socket, partnerId);
+    });
+
+    socket.on('leave_direct_conversation', (partnerId: string) => {
+      DirectMessageHandlers.handleLeaveDirectConversation(socket, partnerId);
+    });
+
+    // User status events
+    socket.on('update_user_status', data => {
+      SocketHandlers.handleUpdateUserStatus(socket, data);
     });
 
     // Typing indicator events
@@ -36,7 +83,7 @@ export function initializeSocket(io: SocketIOServer<ClientToServerEvents, Server
     });
 
     // Connection management events
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', reason => {
       SocketHandlers.handleDisconnect(socket, reason);
     });
 
@@ -51,7 +98,7 @@ export function initializeSocket(io: SocketIOServer<ClientToServerEvents, Server
   });
 
   // Global error handler
-  io.engine.on('connection_error', (err) => {
+  io.engine.on('connection_error', err => {
     console.error('Socket.io connection error:', {
       message: err.message,
       description: err.description,

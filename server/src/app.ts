@@ -49,6 +49,9 @@ app.use(requestLogger);
 app.use(sanitizeInput);
 // app.use(generalLimiter);
 
+// Static file serving for uploads
+app.use('/uploads', express.static('uploads'));
+
 // API routes
 app.use('/api', apiRoutes);
 

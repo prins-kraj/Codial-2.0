@@ -5,13 +5,19 @@ import { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketDa
 type AllowedEvent =
   | 'error'
   | 'message_received'
-  | 'message_updated'
+  | 'message_edited'
   | 'message_deleted'
   | 'user_joined'
   | 'user_left'
   | 'typing_indicator'
   | 'user_status_changed'
+  | 'user_profile_updated'
+  | 'user_settings_changed'
   | 'room_created'
+  | 'direct_message_sent'
+  | 'direct_message_received'
+  | 'direct_message_edited'
+  | 'direct_message_deleted'
   | 'pong';
 
 export class SocketHelpers {
@@ -52,6 +58,24 @@ export class SocketHelpers {
       }
     } catch (error) {
       console.error('Error sending message to user:', error);
+    }
+  }
+
+  // Broadcast to all connected sockets of a user (multiple devices)
+  static async broadcastToUser(userId: string, event: AllowedEvent, data: any) {
+    if (!this.io) return;
+
+    try {
+      // Get all socket IDs for the user
+      const sockets = await this.io.fetchSockets();
+      const userSockets = sockets.filter(socket => socket.data.userId === userId);
+      
+      // Send to all user's sockets
+      for (const socket of userSockets) {
+        socket.emit(event, data);
+      }
+    } catch (error) {
+      console.error('Error broadcasting to user:', error);
     }
   }
 
@@ -118,7 +142,9 @@ export class SocketHelpers {
       createdAt: new Date(),
       updatedAt: new Date(),
       editedAt: null,
-      user: {
+      isDeleted: false,
+      editHistory: null,
+      user: {                                               
         id: 'system',
         username: 'System',
       },

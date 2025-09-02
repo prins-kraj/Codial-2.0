@@ -4,8 +4,11 @@ import { prisma } from '../config/database';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { SocketHelpers } from '../utils/socketHelpers';
 import { NotFoundError, AuthorizationError } from '../middleware/errorHandler';
+import { MessageRepository } from '../repositories/MessageRepository';
 
 export class MessageController {
+  private static repository = new MessageRepository();
+
   // Message validation
   static sendMessageValidation = [
     body('content')
@@ -13,6 +16,14 @@ export class MessageController {
       .isLength({ min: 1, max: 1000 })
       .withMessage('Message content must be between 1 and 1000 characters'),
     body('roomId').isString().notEmpty().withMessage('Room ID is required'),
+  ];
+
+  // Edit message validation
+  static editMessageValidation = [
+    body('content')
+      .trim()
+      .isLength({ min: 1, max: 1000 })
+      .withMessage('Message content must be between 1 and 1000 characters'),
   ];
 
   // Send message via REST API (alternative to WebSocket)
@@ -51,20 +62,10 @@ export class MessageController {
       }
 
       // Create message
-      const message = await prisma.message.create({
-        data: {
-          content: content.trim(),
-          userId: req.user.id,
-          roomId: roomId,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
-          },
-        },
+      const message = await MessageController.repository.create({
+        content: content,
+        userId: req.user.id,
+        roomId: roomId,
       });
 
       // Update room's last activity
@@ -104,79 +105,36 @@ export class MessageController {
     res: Response
   ): Promise<void> {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: errors.array(),
+        });
+        return;
+      }
+
       const { messageId } = req.params;
       const { content } = req.body;
 
-      if (!content || content.trim().length === 0) {
-        res.status(400).json({
-          success: false,
-          error: 'Message content cannot be empty',
-        });
-        return;
-      }
-
-      if (content.length > 1000) {
-        res.status(400).json({
-          success: false,
-          error: 'Message too long (max 1000 characters)',
-        });
-        return;
-      }
-
-      // Find message and verify ownership
-      const message = await prisma.message.findUnique({
-        where: { id: messageId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
-          },
-        },
-      });
-
-      if (!message) {
+      // Get the original message to get roomId for broadcasting
+      const originalMessage = await MessageController.repository.findById(messageId);
+      if (!originalMessage) {
         throw new NotFoundError('Message not found');
       }
 
-      if (message.userId !== req.user.id) {
-        throw new AuthorizationError('You can only edit your own messages');
-      }
-
-      // Check if message is too old to edit (24 hours)
-      const messageAge = Date.now() - message.createdAt.getTime();
-      const maxEditAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
-      if (messageAge > maxEditAge) {
-        res.status(400).json({
-          success: false,
-          error: 'Message is too old to edit (max 24 hours)',
-        });
-        return;
-      }
-
-      // Update message
-      const updatedMessage = await prisma.message.update({
-        where: { id: messageId },
-        data: {
-          content: content.trim(),
-          editedAt: new Date(),
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
-          },
-        },
-      });
+      // Update message using repository
+      const updatedMessage = await MessageController.repository.updateMessage(
+        messageId,
+        content,
+        req.user.id
+      );
 
       // Broadcast message update via WebSocket
       SocketHelpers.broadcastToRoom(
-        message.roomId,
-        'message_updated',
+        originalMessage.roomId,
+        'message_edited',
         updatedMessage
       );
 
@@ -186,15 +144,22 @@ export class MessageController {
         message: 'Message updated successfully',
       });
     } catch (error) {
-      if (
-        error instanceof NotFoundError ||
-        error instanceof AuthorizationError
-      ) {
-        res.status(error.statusCode).json({
-          success: false,
-          error: error.message,
-        });
-        return;
+      if (error instanceof Error) {
+        if (error.message === 'Message not found') {
+          res.status(404).json({
+            success: false,
+            error: error.message,
+          });
+          return;
+        }
+        
+        if (error.message.includes('You can only edit') || error.message.includes('too old')) {
+          res.status(400).json({
+            success: false,
+            error: error.message,
+          });
+          return;
+        }
       }
 
       console.error('Edit message error:', error);
@@ -213,28 +178,19 @@ export class MessageController {
     try {
       const { messageId } = req.params;
 
-      // Find message and verify ownership
-      const message = await prisma.message.findUnique({
-        where: { id: messageId },
-      });
-
-      if (!message) {
+      // Get the original message to get roomId for broadcasting
+      const originalMessage = await MessageController.repository.findById(messageId);
+      if (!originalMessage) {
         throw new NotFoundError('Message not found');
       }
 
-      if (message.userId !== req.user.id) {
-        throw new AuthorizationError('You can only delete your own messages');
-      }
-
-      // Delete message
-      await prisma.message.delete({
-        where: { id: messageId },
-      });
+      // Delete message using repository
+      await MessageController.repository.deleteMessage(messageId, req.user.id);
 
       // Broadcast message deletion via WebSocket
-      SocketHelpers.broadcastToRoom(message.roomId, 'message_deleted', {
+      SocketHelpers.broadcastToRoom(originalMessage.roomId, 'message_deleted', {
         messageId: messageId,
-        roomId: message.roomId,
+        roomId: originalMessage.roomId,
       });
 
       res.status(200).json({
@@ -242,15 +198,22 @@ export class MessageController {
         message: 'Message deleted successfully',
       });
     } catch (error) {
-      if (
-        error instanceof NotFoundError ||
-        error instanceof AuthorizationError
-      ) {
-        res.status(error.statusCode).json({
-          success: false,
-          error: error.message,
-        });
-        return;
+      if (error instanceof Error) {
+        if (error.message === 'Message not found') {
+          res.status(404).json({
+            success: false,
+            error: error.message,
+          });
+          return;
+        }
+        
+        if (error.message.includes('You can only delete')) {
+          res.status(400).json({
+            success: false,
+            error: error.message,
+          });
+          return;
+        }
       }
 
       console.error('Delete message error:', error);

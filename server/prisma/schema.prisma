@@ -12,19 +12,24 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  lastSeen     DateTime @default(now()) @map("last_seen")
-  status       UserStatus @default(OFFLINE)
+  id             String   @id @default(cuid())
+  username       String   @unique
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  lastSeen       DateTime @default(now()) @map("last_seen")
+  status         UserStatus @default(OFFLINE)
+  bio            String?
+  profilePicture String?  @map("profile_picture")
 
   // Relations
-  messages     Message[]
-  userRooms    UserRoom[]
-  createdRooms Room[]     @relation("RoomCreator")
+  messages               Message[]
+  userRooms              UserRoom[]
+  createdRooms           Room[]          @relation("RoomCreator")
+  sentDirectMessages     DirectMessage[] @relation("SentDirectMessages")
+  receivedDirectMessages DirectMessage[] @relation("ReceivedDirectMessages")
+  settings               UserSettings?
 
   @@map("users")
 }
@@ -47,13 +52,15 @@ model Room {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String
-  userId    String   @map("user_id")
-  roomId    String   @map("room_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  editedAt  DateTime? @map("edited_at")
+  id          String   @id @default(cuid())
+  content     String
+  userId      String   @map("user_id")
+  roomId      String   @map("room_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  editedAt    DateTime? @map("edited_at")
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  editHistory Json?    @map("edit_history")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -76,6 +83,37 @@ model UserRoom {
 
   @@id([userId, roomId])
   @@map("user_rooms")
+}
+
+model DirectMessage {
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String   @map("sender_id")
+  receiverId String   @map("receiver_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  editedAt   DateTime? @map("edited_at")
+  isDeleted  Boolean  @default(false) @map("is_deleted")
+
+  sender   User @relation("SentDirectMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedDirectMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("direct_messages")
+  @@index([senderId, receiverId, createdAt])
+}
+
+model UserSettings {
+  id                 String  @id @default(cuid())
+  userId             String  @unique @map("user_id")
+  theme              String  @default("light")
+  notifications      Boolean @default(true)
+  soundEnabled       Boolean @default(true) @map("sound_enabled")
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  showOnlineStatus   Boolean @default(true) @map("show_online_status")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
 
 enum UserStatus {
